@@ -12,6 +12,10 @@
   - [04. 3D再構成](#04-3d再構成)
   - [05. メトリック深度推定](#05-メトリック深度推定)
   - [06. マルチビュー深度とカメラポーズ推定](#06-マルチビュー深度とカメラポーズ推定)
+  - [07. 大規模3D再構成（動画・画像シーケンス）](#07-大規模3d再構成動画画像シーケンス) ⭐ NEW
+  - [08. ライブカメラ3D再構成](#08-ライブカメラ3d再構成) ⭐ NEW
+- [ユーティリティツール](#ユーティリティツール)
+  - [点群処理ツール](#点群処理ツール) ⭐ NEW
 - [よくある質問](#よくある質問)
 
 ## 🚀 セットアップ
@@ -290,6 +294,241 @@ python 06_multiview_pose_estimation.py --input images/ --max-images 10
 
 ---
 
+### 07. 大規模3D再構成（動画・画像シーケンス）
+
+**ファイル**: `07_advanced_3d_reconstruction.py` ⭐ NEW
+
+動画ファイルや画像シーケンスから大規模な3D再構成を実行します。すべてのフレームを処理し、深度とカメラポーズを推定して、統合された点群を生成します。
+
+#### 使用方法
+
+```bash
+# 動画から3D再構成
+python 07_advanced_3d_reconstruction.py --input video.mp4 --output ./reconstruction
+
+# 画像ディレクトリから3D再構成
+python 07_advanced_3d_reconstruction.py --input images/ --output ./reconstruction
+
+# FPSを指定してフレームを間引く
+python 07_advanced_3d_reconstruction.py --input video.mp4 --fps 5 --max-frames 100
+
+# 高品質再構成（大きいモデル、高解像度）
+python 07_advanced_3d_reconstruction.py --input video.mp4 \
+    --model depth-anything/DA3-GIANT --process-res 672
+
+# バッチ処理で高速化
+python 07_advanced_3d_reconstruction.py --input video.mp4 --batch-size 8
+
+# 点群のダウンサンプリングと信頼度フィルタリング
+python 07_advanced_3d_reconstruction.py --input video.mp4 \
+    --downsample-points 0.5 --min-confidence 0.7
+```
+
+#### オプション
+
+| オプション | 説明 | デフォルト |
+|-----------|------|-----------|
+| `--input`, `-i` | 動画ファイルまたは画像ディレクトリ | 必須 |
+| `--output`, `-o` | 出力ディレクトリ | `./reconstruction` |
+| `--model`, `-m` | モデル名またはパス | `depth-anything/DA3-LARGE` |
+| `--fps` | 動画処理のターゲットFPS | すべてのフレーム |
+| `--max-frames` | 処理する最大フレーム数 | なし |
+| `--batch-size` | バッチサイズ | `8` |
+| `--downsample-points` | 点群ダウンサンプリング率（0-1） | `1.0`（ダウンサンプリングなし） |
+| `--min-confidence` | 点の最小信頼度閾値 | `0.5` |
+| `--export-format` | エクスポート形式（カンマ区切り） | `glb,ply,npz` |
+
+#### 出力
+
+- `reconstruction.ply` - PLY形式の点群
+- `reconstruction.npz` - NPZ形式のデータ（点座標、色、メタデータ）
+- `reconstruction.glb` - GLB形式の3Dモデル
+- `reconstruction_info.txt` - 再構成情報（フレーム数、点数など）
+
+#### 特徴
+
+- **自動カメラポーズ推定**: 各フレームのカメラ位置・姿勢を自動推定
+- **点群統合**: すべてのフレームの点群を世界座標系に統合
+- **バッチ処理**: 複数フレームを同時処理してGPU利用率を最大化
+- **柔軟なフィルタリング**: 信頼度や距離による点のフィルタリング
+- **大規模データ対応**: 数百〜数千フレームの処理に対応
+
+---
+
+### 08. ライブカメラ3D再構成
+
+**ファイル**: `08_live_camera_reconstruction.py` ⭐ NEW
+
+USBカメラやウェブカメラからリアルタイムで3D再構成を行います。手動または自動でフレームをキャプチャし、点群を蓄積していきます。
+
+#### 使用方法
+
+```bash
+# デフォルトカメラを使用
+python 08_live_camera_reconstruction.py --output ./live_reconstruction
+
+# 特定のカメラデバイスを指定（カメラID: 0, 1, 2...）
+python 08_live_camera_reconstruction.py --camera 1
+
+# 自動キャプチャモード（30フレームごと）
+python 08_live_camera_reconstruction.py --auto-capture --capture-interval 30
+
+# 深度マップをリアルタイム表示
+python 08_live_camera_reconstruction.py --show-depth
+
+# カメラ解像度を指定
+python 08_live_camera_reconstruction.py --camera-width 1280 --camera-height 720
+```
+
+#### キーボード操作
+
+| キー | 機能 |
+|------|------|
+| `SPACE` | 現在のフレームをキャプチャして再構成に追加 |
+| `a` | 自動キャプチャモードの切り替え |
+| `s` | 現在の再構成を保存 |
+| `c` | 再構成をクリア（リセット） |
+| `q` または `ESC` | 終了 |
+
+#### オプション
+
+| オプション | 説明 | デフォルト |
+|-----------|------|-----------|
+| `--camera`, `-c` | カメラデバイスID | `0` |
+| `--output`, `-o` | 出力ディレクトリ | `./live_reconstruction` |
+| `--model`, `-m` | モデル名 | `depth-anything/DA3-LARGE` |
+| `--camera-width` | カメラキャプチャ幅 | `640` |
+| `--camera-height` | カメラキャプチャ高さ | `480` |
+| `--auto-capture` | 自動キャプチャを有効化 | False |
+| `--capture-interval` | 自動キャプチャ間隔（フレーム数） | `30` |
+| `--max-frames` | 最大キャプチャフレーム数 | `100` |
+| `--min-confidence` | 点の最小信頼度閾値 | `0.5` |
+| `--show-depth` | 深度マップを別ウィンドウに表示 | False |
+
+#### 出力
+
+- `live_reconstruction_{timestamp}.ply` - PLY形式の点群
+- `live_reconstruction_{timestamp}.npz` - NPZ形式のデータ
+
+#### 使用例
+
+1. **手動スキャン**: スペースキーを押してオブジェクトの周りを移動しながらキャプチャ
+2. **自動スキャン**: `--auto-capture`で自動的にフレームをキャプチャ
+3. **部屋のスキャン**: カメラを持って部屋を歩き回りながらキャプチャ
+
+#### 注意事項
+
+- カメラを大きく動かすとカメラポーズ推定が不安定になる場合があります
+- 良い結果を得るには、ゆっくりと滑らかにカメラを動かしてください
+- テクスチャが少ない平面では深度推定の精度が低下する可能性があります
+
+---
+
+## 🛠️ ユーティリティツール
+
+### 点群処理ツール
+
+**ファイル**: `utils/pointcloud_tools.py` ⭐ NEW
+
+点群の統合、ダウンサンプリング、フィルタリング、形式変換などを行うユーティリティスクリプトです。
+
+#### 機能一覧
+
+1. **merge** - 複数の点群を統合
+2. **downsample** - 点群をダウンサンプリング
+3. **filter** - 距離や統計的外れ値でフィルタリング
+4. **convert** - 形式変換（PLY ↔ NPZ）
+5. **stats** - 点群の統計情報を表示
+
+#### 使用方法
+
+```bash
+# 複数のPLYファイルを統合
+python utils/pointcloud_tools.py merge \
+    --input file1.ply file2.ply file3.ply \
+    --output merged.ply
+
+# 点群を50%にダウンサンプリング
+python utils/pointcloud_tools.py downsample \
+    --input cloud.ply \
+    --output downsampled.ply \
+    --ratio 0.5
+
+# ボクセルグリッドでダウンサンプリング
+python utils/pointcloud_tools.py downsample \
+    --input cloud.ply \
+    --output voxel_downsampled.ply \
+    --voxel-size 0.05
+
+# 距離でフィルタリング（原点から10m以内の点のみ）
+python utils/pointcloud_tools.py filter \
+    --input cloud.ply \
+    --output filtered.ply \
+    --max-distance 10.0
+
+# 統計的外れ値を除去
+python utils/pointcloud_tools.py filter \
+    --input cloud.ply \
+    --output cleaned.ply \
+    --remove-outliers
+
+# NPZからPLYに変換
+python utils/pointcloud_tools.py convert \
+    --input cloud.npz \
+    --output cloud.ply
+
+# PLYからNPZに変換
+python utils/pointcloud_tools.py convert \
+    --input cloud.ply \
+    --output cloud.npz
+
+# 点群の統計情報を表示
+python utils/pointcloud_tools.py stats --input cloud.ply
+```
+
+#### 出力例（stats）
+
+```
+Point Cloud Statistics:
+==================================================
+Total points: 1,234,567
+
+Bounding box:
+  X: [-5.234, 5.678]
+  Y: [-3.456, 4.123]
+  Z: [0.123, 8.901]
+
+Center: [0.222, 0.334, 4.512]
+
+Distance from center:
+  Mean: 3.456
+  Std:  1.234
+  Max:  7.890
+
+Color range: 0-255 (uint8)
+```
+
+#### 活用例
+
+```bash
+# 複数のライブカメラセッションを統合してダウンサンプリング
+python utils/pointcloud_tools.py merge \
+    --input session1.ply session2.ply session3.ply \
+    --output merged.ply
+
+python utils/pointcloud_tools.py downsample \
+    --input merged.ply \
+    --output final.ply \
+    --voxel-size 0.02
+
+python utils/pointcloud_tools.py filter \
+    --input final.ply \
+    --output cleaned.ply \
+    --remove-outliers
+```
+
+---
+
 ## 🔧 よくある質問
 
 ### Q: GPU メモリ不足エラーが発生します
@@ -335,6 +574,50 @@ A: 以下の方法を試してください：
 2. 処理解像度を上げる（`--process-res 672`）
 3. 高品質な入力画像を使用
 4. マルチビューの場合、より多くの視点から撮影
+
+### Q: 大規模3D再構成で点群が巨大になりすぎます
+
+A: 以下の方法で点群サイズを削減できます：
+
+1. ダウンサンプリング: `--downsample-points 0.5`（50%に削減）
+2. 信頼度フィルタリング: `--min-confidence 0.7`（信頼度の高い点のみ）
+3. 処理後にユーティリティツールで削減:
+   ```bash
+   python utils/pointcloud_tools.py downsample --input huge.ply --output small.ply --voxel-size 0.05
+   python utils/pointcloud_tools.py filter --input small.ply --output cleaned.ply --remove-outliers
+   ```
+
+### Q: ライブカメラ再構成でカメラが認識されません
+
+A: 以下を確認してください：
+
+1. カメラが正しく接続されているか確認
+2. 他のアプリケーションがカメラを使用していないか確認
+3. 異なるカメラIDを試す: `--camera 0`, `--camera 1`, `--camera 2`
+4. Linuxの場合: `/dev/video*` デバイスのパーミッションを確認
+5. カメラドライバが正しくインストールされているか確認
+
+### Q: 点群の形式を変換したい
+
+A: ユーティリティツールを使用してください：
+
+```bash
+# PLY → NPZ
+python utils/pointcloud_tools.py convert --input cloud.ply --output cloud.npz
+
+# NPZ → PLY
+python utils/pointcloud_tools.py convert --input cloud.npz --output cloud.ply
+```
+
+### Q: 複数の点群を統合したい
+
+A: ユーティリティツールのmergeコマンドを使用：
+
+```bash
+python utils/pointcloud_tools.py merge \
+    --input session1.ply session2.ply session3.ply \
+    --output merged.ply
+```
 
 ## 📝 ライセンス
 
