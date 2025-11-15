@@ -1,7 +1,9 @@
+addict
 pre-commit
 trimesh
 torch>=2
 torchvision
+tqdm
 einops
 huggingface_hub
 imageio
