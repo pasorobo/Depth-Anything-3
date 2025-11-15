@@ -262,6 +262,9 @@ class LiveReconstructor:
         extrinsics = prediction.extrinsics[idx] if prediction.extrinsics is not None else None
         intrinsics = prediction.intrinsics[idx] if prediction.intrinsics is not None else None
 
+        # Get processed image (same size as depth)
+        processed_image = prediction.processed_images[idx] if prediction.processed_images is not None else None
+
         if self.use_pose_estimation and extrinsics is None:
             if not self.world_reference_set:
                 print(
@@ -272,8 +275,16 @@ class LiveReconstructor:
                 print("Pose estimation failed for this frame, skipping capture to keep alignment consistent.")
             return depth, None, None, inference_time, extrinsics, intrinsics
 
+        # Use processed image if available (same resolution as depth), otherwise resize frame
+        if processed_image is not None:
+            image_for_colors = processed_image
+        else:
+            # Fallback: resize frame to match depth
+            h, w = depth.shape
+            image_for_colors = cv2.resize(frame, (w, h))
+
         # Generate point cloud in camera coordinates
-        points_camera, colors = self._depth_to_pointcloud(depth, frame, intrinsics, conf)
+        points_camera, colors = self._depth_to_pointcloud(depth, image_for_colors, intrinsics, conf)
 
         # Transform to world coordinates if pose available
         if self.use_pose_estimation and extrinsics is not None:
@@ -371,8 +382,17 @@ class LiveReconstructor:
         # ref_c2w: reference camera to world (world = reference camera space)
         # cur_c2w: current camera to world
         # We want: cur_cam -> world, where world is defined by reference camera
-        ref_c2w = affine_inverse(reference_extrinsics)
-        cur_c2w = affine_inverse(current_extrinsics)
+
+        # Convert to torch tensors for affine_inverse
+        ref_extrinsics_t = torch.from_numpy(reference_extrinsics).float()
+        cur_extrinsics_t = torch.from_numpy(current_extrinsics).float()
+
+        ref_c2w_t = affine_inverse(ref_extrinsics_t)
+        cur_c2w_t = affine_inverse(cur_extrinsics_t)
+
+        # Convert back to numpy
+        ref_c2w = ref_c2w_t.numpy()
+        cur_c2w = cur_c2w_t.numpy()
 
         # Relative transformation: from current camera to reference camera space
         # T_rel = ref_w2c @ cur_c2w
@@ -814,6 +834,18 @@ def main():
         model = load_model(args.model, args.device)
     except Exception:
         sys.exit(1)
+
+    # Validate model supports pose estimation for 3D reconstruction
+    model_name_lower = args.model.lower()
+    if "metric" in model_name_lower or "mono" in model_name_lower:
+        print("\n⚠ Warning: This model may not support pose estimation!")
+        print(f"  Model: {args.model}")
+        print("\nFor 3D reconstruction with pose estimation, use:")
+        print("  - depth-anything/DA3-LARGE (recommended)")
+        print("  - depth-anything/DA3-GIANT")
+        print("  - depth-anything/DA3NESTED-GIANT-LARGE")
+        print("\nCurrent model (DA3METRIC/DA3MONO) only provides depth estimation.")
+        print("Captures will be skipped if pose estimation is unavailable.\n")
 
     # Initialize reconstructor
     reconstructor = LiveReconstructor(
