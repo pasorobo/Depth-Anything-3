@@ -1,0 +1,12 @@
+# Requirements for Live Camera Reconstruction Example
+
+# Core dependencies (install main package first: pip install -e ../../)
+# torch>=2.0.0
+# torchvision
+# huggingface_hub
+# numpy
+# pillow
+
+# Additional dependencies
+opencv-python>=4.8.0  # Camera capture and video processing
+plyfile>=0.7.4        # PLY file format support

@@ -1,0 +1,12 @@
+# Requirements for Video Processing Example
+
+# Core dependencies (install main package first: pip install -e ../../)
+# torch>=2.0.0
+# torchvision
+# huggingface_hub
+# numpy
+# pillow
+
+# Additional dependencies
+opencv-python>=4.8.0  # Video processing
+tqdm>=4.65.0          # Progress bars

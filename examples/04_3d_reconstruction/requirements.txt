@@ -1,0 +1,12 @@
+# Requirements for 3D Reconstruction Example
+
+# Core dependencies (install main package first: pip install -e ../../)
+# torch>=2.0.0
+# torchvision
+# huggingface_hub
+# numpy
+# pillow
+# trimesh
+# open3d
+
+# No additional dependencies required (uses main package's 3D export functionality)

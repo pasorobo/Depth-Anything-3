@@ -1,0 +1,15 @@
+# Requirements for Advanced 3D Reconstruction Example
+
+# Core dependencies (install main package first: pip install -e ../../)
+# torch>=2.0.0
+# torchvision
+# huggingface_hub
+# numpy
+# pillow
+# trimesh
+# open3d
+
+# Additional dependencies
+opencv-python>=4.8.0  # Video processing
+tqdm>=4.65.0          # Progress bars
+plyfile>=0.7.4        # PLY file format support

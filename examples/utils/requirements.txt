@@ -1,0 +1,10 @@
+# Requirements for Point Cloud Utility Tools
+
+# Core dependencies
+numpy>=1.20.0
+
+# Point cloud file format support
+plyfile>=0.7.4
+
+# Optional: For statistical outlier removal
+scipy>=1.7.0  # Optional, needed only for --remove-outliers feature

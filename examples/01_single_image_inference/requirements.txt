@@ -1,0 +1,10 @@
+# Requirements for Single Image Inference Example
+
+# Core dependencies (install main package first: pip install -e ../../)
+# torch>=2.0.0
+# torchvision
+# huggingface_hub
+# numpy
+# pillow
+
+# No additional dependencies required
